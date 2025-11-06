@@ -201,3 +201,37 @@ button:hover {
         width: 100%; /* Make inputs full width */
     }
 }
+
+/* NEW: Styles for Graph Properties Panel */
+.graph-properties {
+    background: #fdfaef; /* A slightly different background */
+    border: 1px solid #e9d8a1;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.graph-properties h3 {
+    text-align: center;
+    margin-top: 0;
+    color: #333;
+}
+
+.graph-properties ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.graph-properties li {
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.graph-properties li span {
+    font-weight: normal;
+    font-family: "Courier New", Courier, monospace;
+    background-color: #fff;
+    padding: 2px 5px;
+    border-radius: 3px;
+    border: 1px solid #ddd;
+}

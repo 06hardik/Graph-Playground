@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DATA STRUCTURE ---
     class Graph {
-        // ... (Graph class is unchanged) ...
         constructor() {
             this.vertices = new Map();
             this.edges = [];
@@ -11,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         addVertex() {
             const id = String.fromCharCode(65 + this.vertexCounter++);
+            // Add to map with random coordinates
             const x = Math.random() * (svg.width.baseVal.value - 60) + 30;
             const y = Math.random() * (svg.height.baseVal.value - 60) + 30;
             this.vertices.set(id, { x, y });
@@ -20,14 +20,17 @@ document.addEventListener('DOMContentLoaded', () => {
         removeVertex(id) {
             if (!this.vertices.has(id)) return;
             this.vertices.delete(id);
+            // Filter out edges connected to this vertex
             this.edges = this.edges.filter(edge => edge.from !== id && edge.to !== id);
         }
 
         addEdge(from, to) {
+            // Check if vertices exist
             if (!this.vertices.has(from) || !this.vertices.has(to)) {
                 alert("Both vertices must exist to add an edge.");
                 return;
             }
+            // Check if edge already exists
             const exists = this.edges.some(edge => 
                 (edge.from === from && edge.to === to)
             );
@@ -44,9 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         getAdjacencyList() {
             const list = new Map();
+            // Initialize list with empty arrays for all vertices
             for (const id of this.vertices.keys()) {
                 list.set(id, []);
             }
+            // Populate the list
             for (const edge of this.edges) {
                 list.get(edge.from).push(edge.to);
             }
@@ -58,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const size = sortedIds.length;
             const matrix = Array(size).fill(0).map(() => Array(size).fill(0));
             
+            // Create a map for quick index lookup
             const indexMap = new Map(sortedIds.map((id, i) => [id, i]));
 
             for (const edge of this.edges) {
@@ -71,11 +77,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DOM REFERENCES (MODIFIED) ---
+    // --- DOM REFERENCES ---
     const svg = document.getElementById('graph-svg');
     const addVertexBtn = document.getElementById('add-vertex-btn');
     
-    // Updated to use select IDs
     const removeVertexBtn = document.getElementById('remove-vertex-btn');
     const removeVertexSelect = document.getElementById('remove-vertex-select');
     
@@ -92,6 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const listView = document.getElementById('list-view');
     const matrixView = document.getElementById('matrix-view');
 
+    // --- NEW: DOM References for Properties ---
+    const propVertices = document.getElementById('prop-vertices');
+    const propEdges = document.getElementById('prop-edges');
+    const propDensity = document.getElementById('prop-density');
+    const propSourceNodes = document.getElementById('prop-source-nodes');
+    const propSinkNodes = document.getElementById('prop-sink-nodes');
+
     // --- INSTANCE ---
     const graph = new Graph();
 
@@ -102,13 +114,18 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGraph();
         renderAdjacencyList();
         renderAdjacencyMatrix();
-        updateVertexSelects(); // <-- NEW: Update dropdowns
+        updateVertexSelects();
+        renderGraphProperties(); // <-- Call to new function
     }
 
-    // ... (renderGraph, renderAdjacencyList, renderAdjacencyMatrix are unchanged) ...
+    // Render the SVG
     function renderGraph() {
         svg.innerHTML = ''; // Clear SVG
+
+        // Create a 'g' group for edges so they are "under" vertices
         const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+        // Draw Edges
         for (const edge of graph.edges) {
             const fromVertex = graph.vertices.get(edge.from);
             const toVertex = graph.vertices.get(edge.to);
@@ -125,7 +142,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         svg.appendChild(edgeGroup);
 
+        // Create a 'g' group for vertices
         const vertexGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+        // Draw Vertices and Labels
         for (const [id, { x, y }] of graph.vertices.entries()) {
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', x);
@@ -144,12 +164,14 @@ document.addEventListener('DOMContentLoaded', () => {
         svg.appendChild(vertexGroup);
     }
 
+    // Render the Adjacency List
     function renderAdjacencyList() {
         const list = graph.getAdjacencyList();
         if (list.size === 0) {
             listView.innerHTML = "<p>Graph is empty.</p>";
             return;
         }
+        
         let html = "<ul>";
         for (const [id, neighbors] of list.entries()) {
             html += `<li><strong>${id}</strong> → [ ${neighbors.join(', ')} ]</li>`;
@@ -158,18 +180,23 @@ document.addEventListener('DOMContentLoaded', () => {
         listView.innerHTML = html;
     }
 
+    // Render the Adjacency Matrix
     function renderAdjacencyMatrix() {
         const { matrix, ids } = graph.getAdjacencyMatrix();
         if (ids.length === 0) {
             matrixView.innerHTML = "<p>Graph is empty.</p>";
             return;
         }
+
         let html = "<table>";
+        // Header row
         html += "<tr><th>&nbsp;</th>";
         for (const id of ids) {
             html += `<th>${id}</th>`;
         }
         html += "</tr>";
+
+        // Data rows
         for (let i = 0; i < ids.length; i++) {
             html += `<tr><th>${ids[i]}</th>`;
             for (let j = 0; j < ids.length; j++) {
@@ -181,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
         matrixView.innerHTML = html;
     }
     
-    // --- NEW FUNCTION ---
     // Populates all dropdowns with the current list of vertices
     function updateVertexSelects() {
         const sortedIds = Array.from(graph.vertices.keys()).sort();
@@ -218,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Try to restore the previous selection
-            // If the vertex was deleted, this will just default to the placeholder
             selectEl.value = currentVal; 
             if (selectEl.value === "") {
                 // Ensure placeholder is selected if the old value is gone
@@ -227,7 +252,59 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- EVENT LISTENERS (MODIFIED) ---
+    // --- NEW FUNCTION: Renders the properties panel ---
+    function renderGraphProperties() {
+        const v = graph.vertices.size;
+        const e = graph.edges.length;
+
+        // 1. Set Vertex and Edge Counts
+        propVertices.textContent = v;
+        propEdges.textContent = e;
+
+        // 2. Calculate Density
+        // For a directed graph, E_max = V * (V - 1)
+        if (v <= 1) {
+            propDensity.textContent = "N/A";
+        } else {
+            const maxEdges = v * (v - 1);
+            const density = e / maxEdges;
+            propDensity.textContent = density.toFixed(3); // Show as a decimal
+        }
+
+        // 3. Find Source and Sink Nodes
+        if (v === 0) {
+            propSourceNodes.textContent = "N/A";
+            propSinkNodes.textContent = "N/A";
+            return;
+        }
+
+        const allVertices = new Set(graph.vertices.keys());
+        const hasIncomingEdge = new Set();
+        const hasOutgoingEdge = new Set();
+
+        for (const edge of graph.edges) {
+            hasOutgoingEdge.add(edge.from);
+            hasIncomingEdge.add(edge.to);
+        }
+
+        const sourceNodes = [];
+        const sinkNodes = [];
+
+        for (const id of allVertices) {
+            if (!hasIncomingEdge.has(id)) {
+                sourceNodes.push(id);
+            }
+            if (!hasOutgoingEdge.has(id)) {
+                sinkNodes.push(id);
+            }
+        }
+
+        // 4. Display Source and Sink Nodes
+        propSourceNodes.textContent = sourceNodes.length > 0 ? sourceNodes.join(', ') : "None";
+        propSinkNodes.textContent = sinkNodes.length > 0 ? sinkNodes.join(', ') : "None";
+    }
+
+    // --- EVENT LISTENERS ---
 
     // Add Vertex
     addVertexBtn.addEventListener('click', () => {
@@ -241,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (id) {
             graph.removeVertex(id);
             renderAll();
-            // No need to clear input, updateVertexSelects will reset
         }
     });
 
@@ -271,7 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // View Toggling (Unchanged)
+    // View Toggling
     showListBtn.addEventListener('click', () => {
         listView.classList.remove('hidden');
         matrixView.classList.add('hidden');
